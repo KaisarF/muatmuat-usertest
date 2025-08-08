@@ -1,103 +1,252 @@
+'use client'
+
 import Image from "next/image";
+import api from "@/api"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Link from 'next/link';
+// import { addProduct, getAllProducts } from "./utils/initialData";
+import { getInitialData } from "./utils/initialData";
+import Swal from "sweetalert2";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+interface Poke{
+  name:string,
+  url:string
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const[pokeData, setPokeData] = useState<Poke[]>([])
+  const[productData, setProductData] = useState(getInitialData)
+  const[formData, setFormData] = useState({
+    title:'',
+    price:'',
+    stock:''
+})
+  useEffect(()=>{
+    const getPokeData = async()=>{
+      const response = await api.get('/ability/')
+      setPokeData(response.data.results)
+      
+    }
+
+    getPokeData()
+  },[])
+
+  const addProduct =(e)=>{
+    e.preventDefault();
+    console.log(formData)
+    setProductData([...productData,{
+      id: Date.now(),
+        productTitle:formData.title,
+        productPrice:formData.price,
+        productStock:formData.stock,
+        createdAt:new Date().toISOString()
+    }])
+    
+    setFormData({
+      title:'',
+      price:'',
+      stock:''
+    })
+    console.log(productData)
+  }
+
+  const editProduct=(id,e)=>{
+    e.preventDefault()
+    const editedProduct = productData.find((product)=>product.id ===id)
+    editedProduct.productTitle=formData.title
+    editedProduct.productPrice=formData.price
+    editedProduct.productStock=formData.stock
+    setFormData({
+      title:'',
+      price:'',
+      stock:''
+    })
+    console.log(editedProduct)
+  }
+
+  const deleteProduct = (id,e)=>{
+    e.preventDefault()
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setProductData(productData.filter((product)=>product.id !==id))
+        Swal.fire({
+          title: "Deleted!",
+          text: "Your product has been deleted.",
+          icon: "success"
+        });
+      }
+});
+    
+  }
+
+  const resetForm = () => {
+      setFormData({ title: '', price: '', stock: '' });
+    }
+
+  return (
+    <div className="flex flex-col gap-10 w-full h-full py-10 justify-center items-center">
+      <div>
+        <div className="flex justify-between my-10">
+          <h1>Product List</h1>
+          <Dialog>
+            <DialogTrigger><Button className="bg-[#0046FF]" > tambah produk</Button></DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add product?</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={addProduct} className="flex flex-col gap-5 p-5">
+                <Label htmlFor="productName">nama produk</Label>
+                <Input type="text" 
+                value={formData.title} 
+                onChange={(e)=>setFormData(prev => ({...prev, title: e.target.value}))}/>
+                
+                <Label htmlFor="productPrice">harga produk produk</Label>
+                <Input type="text" 
+                value={formData.price} 
+                onChange={(e)=>setFormData(prev => ({...prev, price: e.target.value}))}/>
+                
+                <Label htmlFor="productStock">jumlah produk</Label>
+                <Input type="text" 
+                value={formData.stock}
+                onChange={(e)=>setFormData(prev => ({...prev, stock: e.target.value}))} 
+                />
+                <Button type="submit" >Tambahkan</Button>
+              </form>
+              <DialogClose asChild>
+                <Button type="button" onClick={resetForm}>
+                  Batalkan
+                </Button>
+              </DialogClose>
+            </DialogContent>
+          </Dialog>
+          
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div>
+          {productData.length > 0 ?(
+            <div className="grid grid-cols-4 gap-4">
+              {productData.map((product)=>(
+                <Card key={product.id} className="p-10">
+                  <CardHeader>{product.productTitle}</CardHeader>
+                  <CardContent className="flex flex-col items-center justify-center" >
+                    <h1>{product.productPrice}</h1>
+                    <h1>{product.productStock}</h1>
+                    <div className="flex flex-row gap-4" >
+                      {/* edit data */}
+                      <Dialog>
+                        <DialogTrigger><Button className="bg-[#7ADAA5]" >edit</Button></DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Add product?</DialogTitle>
+                          </DialogHeader>
+                          <form  className="flex flex-col gap-5 p-5">
+                            <Label htmlFor="productName">nama produk</Label>
+                            <Input type="text" 
+                            value={product.productTitle} 
+                            onChange={(e)=>setFormData(prev => ({...prev, title: e.target.value}))}/>
+                            
+                            <Label htmlFor="productPrice">harga produk produk</Label>
+                            <Input type="text" 
+                            value={product.productPrice} 
+                            onChange={(e)=>setFormData(prev => ({...prev, price: e.target.value}))}/>
+                            
+                            <Label htmlFor="productStock">jumlah produk</Label>
+                            <Input type="text" 
+                            value={product.productStock}
+                            onChange={(e)=>setFormData(prev => ({...prev, stock: e.target.value}))} 
+                            />
+
+                            <Button type="submit" onClick={(e)=>editProduct(product.id,e)} >Tambahkan</Button>
+                          </form>
+                          <DialogClose asChild>
+                            <Button type="button" onClick={resetForm}>
+                              Batalkan
+                            </Button>
+                          </DialogClose>
+                        </DialogContent>
+                      </Dialog>
+
+                      {/* delete data */}
+                      <Button variant={"destructive"}
+                      onClick={(e)=>deleteProduct(product.id,e)}
+                      >hapus</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ):(
+            <h1>there are no products</h1>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-col gap-5">
+        <h1>POKE abilty</h1>
+        <div className=" flex w-[500px] h-[300px] overflow-y-scroll" >
+          <Table className="w-56">
+            <TableCaption>A list of your poke abilty</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>name</TableHead>
+                <TableHead>link</TableHead>
+                <TableHead>detail</TableHead>
+                
+              </TableRow>
+            </TableHeader>
+              {pokeData.length > 0 ? (
+                <TableBody>
+                  {pokeData.map((poke)=>(
+                    <TableRow key={poke.url}>
+                      <TableCell>{poke.name}</TableCell>
+                      <TableCell>{poke.url}</TableCell>
+                      <TableCell>
+                          <Link href={`/pokeDetail/${poke.name}`}>
+                            Detail
+                          </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+            ):(
+              <TableRow>
+                <TableCell colSpan={3} > data not found</TableCell>
+              </TableRow>
+            )}
+              
+          </Table>
+        </div>
+      </div>
     </div>
   );
 }
