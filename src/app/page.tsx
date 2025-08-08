@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import api from "@/api"
-import { useState, useEffect } from "react";
+import { useState, useEffect,useActionState } from "react";
 import { useRouter } from "next/router";
 import Link from 'next/link';
-// import { addProduct, getAllProducts } from "./utils/initialData";
+import { createProductSchema } from "./utils/rules";
 import { getInitialData } from "./utils/initialData";
 import Swal from "sweetalert2";
 import {
@@ -35,9 +35,12 @@ interface Poke{
   name:string,
   url:string
 }
-
+const initialState = {
+  errors: undefined,
+  message: undefined,
+};
 export default function Home() {
-
+  
   const[pokeData, setPokeData] = useState<Poke[]>([])
   const[productData, setProductData] = useState(getInitialData)
   const[formData, setFormData] = useState({
@@ -56,13 +59,22 @@ export default function Home() {
   },[])
 
   const addProduct =(e)=>{
+
+    const validatedData = createProductSchema.safeParse(formData)
+
+    if(!validatedData.success){
+      return {
+      errors: validatedData.error.flatten().fieldErrors,
+    };
+    }
+
     e.preventDefault();
     console.log(formData)
     setProductData([...productData,{
       id: Date.now(),
-        productTitle:formData.title,
-        productPrice:formData.price,
-        productStock:formData.stock,
+        productTitle:validatedData.data.productTitle,
+        productPrice:validatedData.data.productPrice,
+        productStock:validatedData.data.productStock,
         createdAt:new Date().toISOString()
     }])
     
@@ -74,19 +86,27 @@ export default function Home() {
     console.log(productData)
   }
 
-  const editProduct=(id,e)=>{
-    e.preventDefault()
-    const editedProduct = productData.find((product)=>product.id ===id)
-    editedProduct.productTitle=formData.title
-    editedProduct.productPrice=formData.price
-    editedProduct.productStock=formData.stock
-    setFormData({
-      title:'',
-      price:'',
-      stock:''
-    })
-    console.log(editedProduct)
-  }
+  // const editHandler=(product)=>{
+  //   setFormData({
+  //     title:product.title,
+  //     price:product.price,
+  //     stock:product.stock
+  //   })
+  // }
+
+  // const editProduct=(id,e)=>{
+  //   e.preventDefault()
+  //   const editedProduct = productData.find((product)=>product.id ===id)
+  //   editedProduct.productTitle=formData.title
+  //   editedProduct.productPrice=formData.price
+  //   editedProduct.productStock=formData.stock
+  //   setFormData({
+  //     title:'',
+  //     price:'',
+  //     stock:''
+  //   })
+  //   console.log(editedProduct)
+  // }
 
   const deleteProduct = (id,e)=>{
     e.preventDefault()
@@ -162,10 +182,13 @@ export default function Home() {
                   <CardContent className="flex flex-col items-center justify-center" >
                     <h1>{product.productPrice}</h1>
                     <h1>{product.productStock}</h1>
-                    <div className="flex flex-row gap-4" >
+                    <div className="flex my-5 flex-row gap-4" >
                       {/* edit data */}
-                      <Dialog>
-                        <DialogTrigger><Button className="bg-[#7ADAA5]" >edit</Button></DialogTrigger>
+                      {/* <Dialog>
+                        <DialogTrigger><Button 
+                          className="bg-[#7ADAA5]" 
+                          onClick={()=>editHandler(product)}
+                          >edit</Button></DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
                             <DialogTitle>Add product?</DialogTitle>
@@ -173,17 +196,17 @@ export default function Home() {
                           <form  className="flex flex-col gap-5 p-5">
                             <Label htmlFor="productName">nama produk</Label>
                             <Input type="text" 
-                            value={product.productTitle} 
+                            value={formData.title} 
                             onChange={(e)=>setFormData(prev => ({...prev, title: e.target.value}))}/>
                             
                             <Label htmlFor="productPrice">harga produk produk</Label>
                             <Input type="text" 
-                            value={product.productPrice} 
+                            value={formData.price} 
                             onChange={(e)=>setFormData(prev => ({...prev, price: e.target.value}))}/>
                             
                             <Label htmlFor="productStock">jumlah produk</Label>
                             <Input type="text" 
-                            value={product.productStock}
+                            value={formData.stock}
                             onChange={(e)=>setFormData(prev => ({...prev, stock: e.target.value}))} 
                             />
 
@@ -195,7 +218,7 @@ export default function Home() {
                             </Button>
                           </DialogClose>
                         </DialogContent>
-                      </Dialog>
+                      </Dialog> */}
 
                       {/* delete data */}
                       <Button variant={"destructive"}
